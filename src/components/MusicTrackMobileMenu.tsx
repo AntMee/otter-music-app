@@ -5,6 +5,11 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import {
   Download,
@@ -18,7 +23,7 @@ import {
   MessageSquareQuote,
   Link2,
 } from "lucide-react";
-import { ReactNode, useState } from "react";
+import { type ElementType, type ReactNode, useState } from "react";
 import { MusicCover } from "./MusicCover";
 import { useMusicCover } from "@/hooks/useMusicCover";
 import { MusicTrack, SearchIntent, sourceLabels } from "@/types/music";
@@ -26,6 +31,7 @@ import { useNavigate } from "react-router-dom";
 import { useMusicStore } from "@/store/music-store";
 import { MusicProviderFactory } from "@/lib/music-provider";
 import { MusicCommentsDrawer } from "./MusicCommentsDrawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Dialog,
   DialogContent,
@@ -63,13 +69,13 @@ const ActionButton = ({
   className,
 }: {
   onClick?: () => void;
-  icon: React.ElementType;
+  icon: ElementType;
   children: ReactNode;
   className?: string;
 }) => (
   <Button
     variant="ghost"
-    className={cn("justify-start w-full", className)}
+    className={cn("w-full justify-start", className)}
     onClick={onClick}
   >
     <Icon className="mr-2 h-4 w-4 shrink-0" />
@@ -94,11 +100,11 @@ export function MusicTrackMobileMenu({
   onNavigate,
 }: MusicTrackMobileMenuProps) {
   const coverUrl = useMusicCover(track, open);
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [showArtistSelection, setShowArtistSelection] = useState(false);
   const [showComments, setShowComments] = useState(false);
 
-  // Zustand Store
   const setSearchQuery = useMusicStore((s) => s.setSearchQuery);
   const setSearchResults = useMusicStore((s) => s.setSearchResults);
   const setSearchIntent = useMusicStore((s) => s.setSearchIntent);
@@ -112,7 +118,6 @@ export function MusicTrackMobileMenu({
     artist?: string,
     id?: string
   ) => {
-    // 如果支持详情查询，但没有 ID，尝试获取详情
     if (
       (provider.getArtistDetail || provider.getAlbumDetail) &&
       (!id || id === "0") &&
@@ -127,17 +132,13 @@ export function MusicTrackMobileMenu({
             id = String(detail.al.id);
           }
 
-          // B站音源：从详情中提取合集/分P 信息
           if (type === "album" && track.source === "bilibili") {
-            // 优先使用已有的 album_id
             if (track.album_id?.startsWith("bilibili_")) {
               id = track.album_id;
             } else if (detail.ugc_season?.id) {
-              // 从 ugc_season 构建专辑 ID
               const ownerMid = detail.owner?.mid;
               id = buildBilibiliSeriesAlbumId(detail.ugc_season.id, ownerMid);
             } else if (detail.pages && detail.pages.length > 1) {
-              // 多分P 视频，构建分P 专辑 ID
               const parsed = parseBilibiliTrackId(track.id);
               if (parsed?.bvid) {
                 id = buildBilibiliMultiPAlbumId(parsed.bvid);
@@ -176,15 +177,14 @@ export function MusicTrackMobileMenu({
         return;
       }
     }
-    let searchKeyword = keyword;
-    if (type === "album" && artist) {
-      searchKeyword = `${keyword} ${artist}`;
-    }
+
+    const searchKeyword =
+      type === "album" && artist ? `${keyword} ${artist}` : keyword;
 
     setSearchQuery(searchKeyword);
     if (type) {
       setSearchIntent({
-        type: type as SearchIntent["type"],
+        type,
         artist,
         id,
         name: keyword,
@@ -202,169 +202,191 @@ export function MusicTrackMobileMenu({
     onNavigate?.();
   };
 
+  const triggerButton = (
+    <Button
+      size="icon"
+      variant="ghost"
+      className={cn("h-8 w-8", triggerClassName)}
+      onClick={(e) => e.stopPropagation()}
+      title="更多"
+    >
+      <MoreVertical className="h-4 w-4" />
+    </Button>
+  );
+
+  const menuContent = (
+    <>
+      <div className="flex items-center gap-4 px-5 py-4 md:px-4 md:py-3">
+        <MusicCover
+          src={coverUrl}
+          alt={track.name}
+          className="h-16 w-16 rounded-lg shadow-md md:h-12 md:w-12"
+          iconClassName="h-8 w-8 md:h-6 md:w-6"
+        />
+        <div className="min-w-0">
+          <div className="line-clamp-2 text-lg font-bold md:text-base md:font-semibold">
+            {track.name}
+          </div>
+          <div className="truncate text-sm text-muted-foreground">
+            {track.artist.join(" / ")}
+            {track.album && ` - ${track.album}`}
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-col gap-2 p-4 md:gap-1 md:p-3">
+        {onToggleLike && (
+          <ActionButton
+            icon={Heart}
+            onClick={() => {
+              onToggleLike();
+              onOpenChange(false);
+            }}
+            className={isFavorite ? "text-primary [&>svg]:fill-primary" : ""}
+          >
+            {isFavorite ? "取消喜欢" : "喜欢"}
+          </ActionButton>
+        )}
+        {onDownload && (
+          <ActionButton
+            icon={Download}
+            onClick={() => {
+              onDownload();
+              onOpenChange(false);
+            }}
+          >
+            下载
+          </ActionButton>
+        )}
+        {onAddToPlaylist && (
+          <ActionButton
+            icon={ListPlus}
+            onClick={() => {
+              onAddToPlaylist();
+              onOpenChange(false);
+            }}
+          >
+            添加到歌单
+          </ActionButton>
+        )}
+        {onAddToNextPlay && (
+          <ActionButton
+            icon={CornerDownRight}
+            onClick={() => {
+              onAddToNextPlay();
+              onOpenChange(false);
+            }}
+          >
+            下一首播放
+          </ActionButton>
+        )}
+
+        {provider.getComments && (
+          <ActionButton
+            icon={MessageSquareQuote}
+            onClick={() => {
+              onOpenChange(false);
+              setShowComments(true);
+            }}
+          >
+            评论
+          </ActionButton>
+        )}
+
+        {track.source !== "podcast" && track.artist?.length > 0 && (
+          <ActionButton
+            icon={User}
+            onClick={() => {
+              if (track.artist.length > 1) {
+                setShowArtistSelection(true);
+              } else {
+                handleSearch(
+                  track.artist[0],
+                  "artist",
+                  undefined,
+                  track.artist_ids?.[0]
+                );
+              }
+            }}
+          >
+            歌手：{track.artist.join(" / ")}
+          </ActionButton>
+        )}
+
+        {track.source !== "podcast" && track.album && (
+          <ActionButton
+            icon={Disc}
+            onClick={() => {
+              handleSearch(
+                track.album,
+                "album",
+                track.artist[0],
+                track.album_id
+              );
+            }}
+          >
+            专辑：{track.album}
+          </ActionButton>
+        )}
+
+        <Button
+          variant="ghost"
+          className="w-full cursor-default justify-start text-muted-foreground"
+        >
+          <Link2 className="mr-2 h-4 w-4" /> 音源：
+          {sourceLabels[track.source] || track.source}
+        </Button>
+
+        {onRemove && (
+          <ActionButton
+            icon={Trash2}
+            className="text-destructive hover:text-destructive"
+            onClick={() => {
+              onOpenChange(false);
+              if (
+                !confirmRemove ||
+                window.confirm(`确定${removeLabel}《${track.name}》吗？`)
+              ) {
+                onRemove();
+              }
+            }}
+          >
+            {removeLabel}
+          </ActionButton>
+        )}
+
+        {customActions && (
+          <div className="flex flex-col gap-2">{customActions}</div>
+        )}
+      </div>
+    </>
+  );
+
   return (
     <div>
-      <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerTrigger asChild>
-          <Button
-            size="icon"
-            variant="ghost"
-            className={cn("h-8 w-8", triggerClassName)}
+      {!isMobile ? (
+        <Popover open={open} onOpenChange={onOpenChange}>
+          <PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
+          <PopoverContent
+            side="top"
+            align="end"
+            sideOffset={10}
+            collisionPadding={24}
+            className="w-[360px] max-w-[calc(100vw-3rem)] overflow-hidden rounded-2xl border bg-popover p-0 shadow-xl"
             onClick={(e) => e.stopPropagation()}
-            title="更多"
           >
-            <MoreVertical className="h-4 w-4" />
-          </Button>
-        </DrawerTrigger>
-        <DrawerContent onClick={(e) => e.stopPropagation()}>
-          <DrawerTitle className="sr-only">歌曲菜单</DrawerTitle>
-          <div className="flex items-center gap-4 px-6 py-4">
-            <MusicCover
-              src={coverUrl}
-              alt={track.name}
-              className="h-16 w-16 rounded-lg shadow-md"
-              iconClassName="h-8 w-8"
-            />
-            <div className="min-w-0">
-              <div className="font-bold line-clamp-2 text-lg">{track.name}</div>
-              <div className="text-sm text-muted-foreground truncate">
-                {track.artist.join(" / ")}
-                {track.album && ` • ${track.album}`}
-              </div>
-            </div>
-          </div>
-          <div className="p-4 flex flex-col gap-2">
-            {onToggleLike && (
-              <ActionButton
-                icon={Heart}
-                onClick={() => {
-                  onToggleLike();
-                  onOpenChange(false);
-                }}
-                className={
-                  isFavorite ? "text-primary [&>svg]:fill-primary" : ""
-                }
-              >
-                {isFavorite ? "取消喜欢" : "喜欢"}
-              </ActionButton>
-            )}
-            {onDownload && (
-              <ActionButton
-                icon={Download}
-                onClick={() => {
-                  onDownload();
-                  onOpenChange(false);
-                }}
-              >
-                下载
-              </ActionButton>
-            )}
-            {onAddToPlaylist && (
-              <ActionButton
-                icon={ListPlus}
-                onClick={() => {
-                  onAddToPlaylist();
-                  onOpenChange(false);
-                }}
-              >
-                添加到歌单
-              </ActionButton>
-            )}
-            {onAddToNextPlay && (
-              <ActionButton
-                icon={CornerDownRight}
-                onClick={() => {
-                  onAddToNextPlay();
-                  onOpenChange(false);
-                }}
-              >
-                下一首播放
-              </ActionButton>
-            )}
-
-            {/* 如果支持评论，显示评论入口 */}
-            {provider.getComments && (
-              <ActionButton
-                icon={MessageSquareQuote}
-                onClick={() => {
-                  onOpenChange(false);
-                  setShowComments(true);
-                }}
-              >
-                评论
-              </ActionButton>
-            )}
-
-            {/* 除播客外，有歌手即显示歌手入口 */}
-            {track.source !== "podcast" && track.artist?.length > 0 && (
-              <ActionButton
-                icon={User}
-                onClick={() => {
-                  if (track.artist.length > 1) {
-                    setShowArtistSelection(true);
-                  } else {
-                    handleSearch(
-                      track.artist[0],
-                      "artist",
-                      undefined,
-                      track.artist_ids?.[0]
-                    );
-                  }
-                }}
-              >
-                歌手：{track.artist.join(" / ")}
-              </ActionButton>
-            )}
-
-            {/* 除播客外，有专辑即显示专辑入口 */}
-            {track.source !== "podcast" && track.album && (
-              <ActionButton
-                icon={Disc}
-                onClick={() => {
-                  handleSearch(
-                    track.album!,
-                    "album",
-                    track.artist[0],
-                    track.album_id
-                  );
-                }}
-              >
-                专辑：{track.album}
-              </ActionButton>
-            )}
-
-            <Button
-              variant="ghost"
-              className="justify-start w-full cursor-default text-muted-foreground"
-            >
-              <Link2 className="mr-2 h-4 w-4" /> 音源：
-              {sourceLabels[track.source] || track.source}
-            </Button>
-
-            {onRemove && (
-              <ActionButton
-                icon={Trash2}
-                className="text-destructive hover:text-destructive"
-                onClick={() => {
-                  onOpenChange(false);
-                  if (
-                    !confirmRemove ||
-                    window.confirm(`确定${removeLabel}《${track.name}》吗？`)
-                  ) {
-                    onRemove();
-                  }
-                }}
-              >
-                {removeLabel}
-              </ActionButton>
-            )}
-
-            {customActions && (
-              <div className="flex flex-col gap-2">{customActions}</div>
-            )}
-          </div>
-        </DrawerContent>
-      </Drawer>
+            <span className="sr-only">歌曲菜单</span>
+            {menuContent}
+          </PopoverContent>
+        </Popover>
+      ) : (
+        <Drawer open={open} onOpenChange={onOpenChange}>
+          <DrawerTrigger asChild>{triggerButton}</DrawerTrigger>
+          <DrawerContent onClick={(e) => e.stopPropagation()}>
+            <DrawerTitle className="sr-only">歌曲菜单</DrawerTitle>
+            {menuContent}
+          </DrawerContent>
+        </Drawer>
+      )}
 
       <Dialog open={showArtistSelection} onOpenChange={setShowArtistSelection}>
         <DialogContent>
@@ -376,7 +398,7 @@ export function MusicTrackMobileMenu({
               <Button
                 key={artist}
                 variant="ghost"
-                className="justify-start w-full"
+                className="w-full justify-start"
                 onClick={() =>
                   handleSearch(
                     artist,

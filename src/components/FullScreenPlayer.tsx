@@ -350,7 +350,7 @@ export function FullScreenPlayer({
         mode={fullScreenBackgroundMode}
       />
 
-      <header className="shrink-0 flex items-center justify-between px-6 pt-[calc(1rem+env(safe-area-inset-top))] pb-6 relative z-10">
+      <header className="relative z-10 mx-auto flex w-full max-w-6xl shrink-0 items-center justify-between px-6 pt-[calc(1rem+env(safe-area-inset-top))] pb-4 md:px-10 md:pb-2">
         <Button
           variant="ghost"
           size="icon"
@@ -380,7 +380,7 @@ export function FullScreenPlayer({
       </header>
 
       <div
-        className="flex-1 flex flex-col items-center justify-center px-2 relative z-10 overflow-hidden cursor-pointer"
+        className="flex-1 flex flex-col items-center justify-center px-4 relative z-10 overflow-hidden cursor-pointer"
         onClick={() => {
           setShowLyrics(!showLyrics);
         }}
@@ -392,7 +392,7 @@ export function FullScreenPlayer({
         ) : (
           <div
             className={cn(
-              "relative aspect-square w-72 max-w-[320px] overflow-hidden rounded-3xl transition-transform duration-500 ring-1 ring-white/5",
+              "relative aspect-square w-72 max-w-[320px] overflow-hidden rounded-3xl transition-transform duration-500 ring-1 ring-white/5 md:w-[min(36vh,420px)] md:max-w-[420px]",
               isPlaying ? "scale-100" : "scale-[0.95]"
             )}
             style={{
@@ -414,7 +414,7 @@ export function FullScreenPlayer({
         )}
       </div>
 
-      <div className="shrink-0 px-8 py-4 relative z-10">
+      <div className="relative z-10 mx-auto w-full max-w-6xl shrink-0 px-8 py-4 md:px-10">
         <div className="flex items-center justify-between">
           <div
             className={cn("min-w-0 flex-1 cursor-pointer select-none")}
@@ -481,7 +481,7 @@ export function FullScreenPlayer({
         </div>
       </div>
 
-      <div className="shrink-0 px-8 relative z-10">
+      <div className="relative z-10 mx-auto w-full max-w-6xl shrink-0 px-8 md:px-10">
         <PlayerProgressBar
           className="relative"
           leftTimeSuffix={
@@ -505,7 +505,7 @@ export function FullScreenPlayer({
         />
       </div>
 
-      <div className="shrink-0 flex items-center justify-between px-8 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))] relative z-10">
+      <div className="relative z-10 mx-auto flex w-full max-w-6xl shrink-0 items-center justify-between px-8 py-6 pb-[calc(2rem+env(safe-area-inset-bottom))] md:px-10">
         <Button
           variant="ghost"
           size="icon"
@@ -554,6 +554,7 @@ export function FullScreenPlayer({
           onReshuffle={reshuffle}
           onRemove={handleRemoveFromQueue}
           onPlayTrack={playTrackAsNext}
+          desktopPlacement="fullscreen"
           trigger={
             <Button
               variant="ghost"

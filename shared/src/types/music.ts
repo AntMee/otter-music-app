@@ -41,8 +41,18 @@ export const searchOptions: Record<string, string> = {
   migu: "Migu",
   bilibili: "B站",
   qq: "QQ音乐",
-  lx_kuwo: "小蜗音乐",
-  lx_qq: "小秋音乐",
+  lx_kuwo: "小蜗音乐1",
+  lx_qq: "小秋音乐1",
+  lx_kuwo_huibq: "小蜗音乐2",
+  lx_qq_huibq: "小秋音乐2",
+  lx_wy: "小芸音乐",
+  lx_kg: "小枸音乐",
+  lx_mg: "小蜜音乐",
+  cq_kg: "长青酷狗",
+  cq_qq: "长青QQ",
+  cq_wy: "长青网易",
+  cq_kw: "长青酷我",
+  cq_mg: "长青咪咕",
 };
 
 export const sourceLabels: Record<string, string> = {
@@ -53,8 +63,18 @@ export const sourceLabels: Record<string, string> = {
   migu: "Migu",
   bilibili: "B站",
   qq: "QQ",
-  lx_kuwo: "小蜗",
-  lx_qq: "小秋",
+  lx_kuwo: "小蜗1",
+  lx_qq: "小秋1",
+  lx_kuwo_huibq: "小蜗2",
+  lx_qq_huibq: "小秋2",
+  lx_wy: "小芸",
+  lx_kg: "小枸",
+  lx_mg: "小蜜",
+  cq_kg: "长青KG",
+  cq_qq: "长青QQ",
+  cq_wy: "长青WY",
+  cq_kw: "长青KW",
+  cq_mg: "长青MG",
 };
 
 export const aggregatedSourceOptions: {
@@ -87,13 +107,63 @@ export const aggregatedSourceOptions: {
   },
   {
     value: "lx_kuwo",
-    label: "小蜗音乐",
-    description: "酷我音源（洛雪）",
+    label: "小蜗音乐1",
+    description: "酷我音源（旧线路）",
   },
   {
     value: "lx_qq",
-    label: "小秋音乐",
-    description: "QQ音源（洛雪）",
+    label: "小秋音乐1",
+    description: "QQ音源（旧线路）",
+  },
+  {
+    value: "lx_kuwo_huibq",
+    label: "小蜗音乐2",
+    description: "酷我音源（Huibq Music_Free）",
+  },
+  {
+    value: "lx_qq_huibq",
+    label: "小秋音乐2",
+    description: "QQ音源（Huibq Music_Free）",
+  },
+  {
+    value: "lx_wy",
+    label: "小芸音乐",
+    description: "网易音源（Huibq Music_Free）",
+  },
+  {
+    value: "lx_kg",
+    label: "小枸音乐",
+    description: "酷狗音源（Huibq Music_Free）",
+  },
+  {
+    value: "lx_mg",
+    label: "小蜜音乐",
+    description: "咪咕音源（Huibq Music_Free）",
+  },
+  {
+    value: "cq_kg",
+    label: "长青酷狗",
+    description: "长青SVIP酷狗播放线路",
+  },
+  {
+    value: "cq_qq",
+    label: "长青QQ",
+    description: "长青SVIP QQ播放线路",
+  },
+  {
+    value: "cq_wy",
+    label: "长青网易",
+    description: "长青SVIP网易播放线路",
+  },
+  {
+    value: "cq_kw",
+    label: "长青酷我",
+    description: "长青SVIP酷我播放线路",
+  },
+  {
+    value: "cq_mg",
+    label: "长青咪咕",
+    description: "长青SVIP咪咕播放线路",
   },
 ];
 
@@ -111,8 +181,22 @@ export const sourceBadgeStyles: Record<string, string> = {
     "text-pink-500/70 border-pink-500/20 bg-pink-500/5 hover:bg-pink-500/10",
   lx_kuwo:
     "text-amber-500/70 border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10",
+  lx_kuwo_huibq:
+    "text-amber-500/70 border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10",
   lx_qq:
     "text-yellow-500/70 border-yellow-500/20 bg-yellow-500/5 hover:bg-yellow-500/10",
+  lx_qq_huibq:
+    "text-yellow-500/70 border-yellow-500/20 bg-yellow-500/5 hover:bg-yellow-500/10",
+  lx_wy: "text-red-500/70 border-red-500/20 bg-red-500/5 hover:bg-red-500/10",
+  lx_kg: "text-sky-500/70 border-sky-500/20 bg-sky-500/5 hover:bg-sky-500/10",
+  lx_mg: "text-pink-500 border-pink-500/30 bg-pink-500/5 hover:bg-pink-500/10",
+  cq_kg: "text-sky-500/70 border-sky-500/20 bg-sky-500/5 hover:bg-sky-500/10",
+  cq_qq:
+    "text-yellow-500/70 border-yellow-500/20 bg-yellow-500/5 hover:bg-yellow-500/10",
+  cq_wy: "text-red-500/70 border-red-500/20 bg-red-500/5 hover:bg-red-500/10",
+  cq_kw:
+    "text-amber-500/70 border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10",
+  cq_mg: "text-pink-500 border-pink-500/30 bg-pink-500/5 hover:bg-pink-500/10",
   default:
     "text-muted-foreground/70 border-border bg-muted/30 hover:bg-muted/50",
 };
@@ -133,6 +217,16 @@ export const DEFAULT_SOURCE_CONFIGS: SourceConfig[] = [
   { source: "kuwo", enabled: false, visible: true },
   { source: "lx_kuwo", enabled: false, visible: true },
   { source: "lx_qq", enabled: false, visible: true },
+  { source: "lx_kuwo_huibq", enabled: false, visible: true },
+  { source: "lx_qq_huibq", enabled: false, visible: true },
+  { source: "lx_wy", enabled: false, visible: true },
+  { source: "lx_kg", enabled: false, visible: true },
+  { source: "lx_mg", enabled: false, visible: true },
+  { source: "cq_wy", enabled: false, visible: true },
+  { source: "cq_kw", enabled: false, visible: true },
+  { source: "cq_qq", enabled: false, visible: true },
+  { source: "cq_kg", enabled: false, visible: true },
+  { source: "cq_mg", enabled: false, visible: true },
 ];
 
 export type MusicSource =
@@ -166,7 +260,17 @@ export type MusicSource =
   | "all"
   | "local"
   | "lx_kuwo"
-  | "lx_qq";
+  | "lx_qq"
+  | "lx_kuwo_huibq"
+  | "lx_qq_huibq"
+  | "lx_wy"
+  | "lx_kg"
+  | "lx_mg"
+  | "cq_kg"
+  | "cq_qq"
+  | "cq_wy"
+  | "cq_kw"
+  | "cq_mg";
 
 export interface SearchIntent {
   type: "artist" | "album" | "playlist" | "";

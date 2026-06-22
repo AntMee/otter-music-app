@@ -339,26 +339,30 @@ export function LocalMusicPage({
         </button>
       }
     >
-      <MusicPlaylistView
-        title="本地音乐"
-        tracks={tracks}
-        icon={<HardDriveDownload className="h-8 w-8 text-primary/80" />}
-        onPlay={handlePlay}
-        currentTrackId={currentTrackId}
-        isPlaying={isPlaying}
-        onRemove={handleDeleteTrack}
-        onBatchRemove={handleBatchDeleteTracks}
-        removeLabel="删除"
-        confirmRemove={false}
-        action={
-          <button
-            onClick={() => navigate("/playlist/__offline__")}
-            className="flex items-center gap-1.5 px-3 h-8 rounded-full text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-          >
-            <WifiOff size={14} className="shrink-0" />
-          </button>
-        }
-      />
+      <div className="flex-1 min-h-0 overflow-hidden bg-background md:bg-muted/25 md:p-6 lg:p-8">
+        <div className="mx-auto flex h-full max-w-7xl overflow-hidden bg-background md:rounded-2xl md:border md:shadow-sm">
+          <MusicPlaylistView
+            title="本地音乐"
+            tracks={tracks}
+            icon={<HardDriveDownload className="h-8 w-8 text-primary/80" />}
+            onPlay={handlePlay}
+            currentTrackId={currentTrackId}
+            isPlaying={isPlaying}
+            onRemove={handleDeleteTrack}
+            onBatchRemove={handleBatchDeleteTracks}
+            removeLabel="删除"
+            confirmRemove={false}
+            action={
+              <button
+                onClick={() => navigate("/playlist/__offline__")}
+                className="flex items-center gap-1.5 px-3 h-8 rounded-full text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+              >
+                <WifiOff size={14} className="shrink-0" />
+              </button>
+            }
+          />
+        </div>
+      </div>
 
       <LocalMusicPermissionDialog
         open={showPermissionDialog}

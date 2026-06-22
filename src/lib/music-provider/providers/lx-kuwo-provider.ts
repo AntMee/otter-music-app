@@ -13,9 +13,14 @@ import { RawApiTrack } from "../types";
 
 /** 洛雪版酷我音源：搜索/图片/歌词复用 GD Studio API（source=kuwo），URL 走 LX API */
 export class LxKuwoProvider extends KuwoProvider {
-  source: MusicSource = "lx_kuwo";
+  source: MusicSource;
 
   private static readonly API_SOURCE: MusicSource = "kuwo";
+
+  constructor(source: MusicSource = "lx_kuwo") {
+    super();
+    this.source = source;
+  }
 
   async search(
     query: string,
@@ -39,7 +44,7 @@ export class LxKuwoProvider extends KuwoProvider {
   }
 
   async getUrl(track: MusicTrack, br?: number): Promise<string | null> {
-    return getLxUrl("lx_kuwo", track.url_id, br);
+    return getLxUrl(this.source, track.url_id, br);
   }
 
   async getPic(track: MusicTrack, size: number = 800): Promise<string | null> {

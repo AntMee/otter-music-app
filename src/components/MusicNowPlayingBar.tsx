@@ -84,12 +84,16 @@ export function MusicNowPlayingBar({
   }
 
   return (
-    <div className={cn(isTab ? "px-3" : "w-full")}>
+    <div
+      className={cn(
+        isTab ? "px-3 md:mx-auto md:max-w-7xl md:px-6 lg:px-8" : "w-full"
+      )}
+    >
       <div
         className={cn(
           "flex items-center backdrop-blur-sm transition-all duration-300",
           isTab
-            ? "gap-2 px-2 py-1.5 rounded-2xl bg-card/95 shadow-md border border-border/50"
+            ? "gap-2 rounded-2xl border border-border/50 bg-card/95 px-2 py-1.5 shadow-md md:rounded-lg md:px-3 md:py-2"
             : "gap-3 px-4 py-2.5 bg-background/95 border-t border-border/50 pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
         )}
       >

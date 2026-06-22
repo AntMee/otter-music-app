@@ -21,14 +21,14 @@ const tabs: TabItem[] = [
 
 export function MusicTabBar() {
   const location = useLocation();
-  
+
   // Determine active tab based on current path
   const getActiveTab = (pathname: string): TabId => {
     // 发现 (Search) - 默认 Tab
     if (pathname.startsWith("/search")) {
       return "search";
     }
-    
+
     // 喜欢 (Favorites)
     if (pathname.startsWith("/favorites")) {
       return "favorites";
@@ -38,14 +38,14 @@ export function MusicTabBar() {
     if (pathname.startsWith("/mine")) {
       return "mine";
     }
-    
+
     return "search"; // Default
   };
 
   const activeTab = getActiveTab(location.pathname);
 
   return (
-    <nav className="flex min-h-(--tab-bar-safe-height) items-start justify-around bg-card/95 backdrop-blur-xl border-t border-border/50 px-2 pt-2 pb-[calc(0.5rem+var(--safe-area-bottom))]">
+    <nav className="flex min-h-(--tab-bar-safe-height) items-start justify-around border-t border-border/50 bg-card/95 px-2 pt-2 pb-[calc(0.5rem+var(--safe-area-bottom))] backdrop-blur-xl md:min-h-0 md:flex-col md:items-stretch md:justify-start md:gap-2 md:border-t-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
         const Icon = tab.icon;
@@ -54,15 +54,15 @@ export function MusicTabBar() {
             key={tab.id}
             to={tab.path}
             className={cn(
-              "flex min-h-11 min-w-[56px] flex-col items-center justify-center gap-0.5 px-3 py-1 transition-colors",
-              isActive ? "text-primary" : "text-muted-foreground"
+              "flex min-h-11 min-w-[56px] flex-col items-center justify-center gap-0.5 px-3 py-1 transition-colors md:min-w-0 md:rounded-lg md:px-2 md:py-3",
+              isActive
+                ? "text-primary md:bg-primary/10"
+                : "text-muted-foreground md:hover:bg-muted/70 md:hover:text-foreground"
             )}
             aria-label={tab.label}
           >
             <Icon
-              className={cn(
-                "h-5 w-5 transition-all"
-              )}
+              className={cn("h-5 w-5 transition-all")}
               strokeWidth={isActive ? 2.5 : 2}
             />
             <span className="text-[10px] font-medium">{tab.label}</span>

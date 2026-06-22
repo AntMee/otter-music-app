@@ -9,7 +9,12 @@ import { getLxUrl } from "@/lib/utils/lx-api";
 
 /** 洛雪版 QQ 音源：搜索复用 vkey 直连，URL 走 LX API */
 export class LxQqProvider extends QqApiProvider {
-  source: MusicSource = "lx_qq";
+  source: MusicSource;
+
+  constructor(source: MusicSource = "lx_qq") {
+    super();
+    this.source = source;
+  }
 
   async search(
     query: string,
@@ -23,7 +28,7 @@ export class LxQqProvider extends QqApiProvider {
       ...result,
       items: result.items.map((track) => ({
         ...track,
-        source: "lx_qq" as const,
+        source: this.source,
       })),
     };
   }
@@ -32,6 +37,6 @@ export class LxQqProvider extends QqApiProvider {
     let songid = track.url_id || track.lyric_id;
     if (!songid) return null;
     if (songid.startsWith("qq_")) songid = songid.slice(3);
-    return getLxUrl("lx_qq", songid, br);
+    return getLxUrl(this.source, songid, br);
   }
 }

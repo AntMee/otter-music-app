@@ -8,6 +8,11 @@ const LX_API_KEY = "share-v3";
 export const LX_SOURCE_CODE: Record<string, string> = {
   lx_kuwo: "kw",
   lx_qq: "tx",
+  lx_kuwo_huibq: "kw",
+  lx_qq_huibq: "tx",
+  lx_wy: "wy",
+  lx_kg: "kg",
+  lx_mg: "mg",
 };
 
 /** LX API 仅支持 128k / 320k 两档音质，超过 320 视为 320k，低于 128 视为 128k */
