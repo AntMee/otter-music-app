@@ -50,7 +50,7 @@ export function MusicLayout({
               "flex-none z-50 absolute left-0 right-0 transition-all duration-300",
               isTab
                 ? "bottom-(--now-playing-safe-height) md:bottom-4"
-                : "bottom-0"
+                : "bottom-0 md:bottom-4"
             )}
           >
             {player}

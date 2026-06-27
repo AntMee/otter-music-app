@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { createPortal } from "react-dom";
 import { useState, useEffect, memo, useMemo, useCallback, useRef } from "react";
@@ -82,7 +82,7 @@ const BackgroundLayer = memo(
 
     return (
       <div className="absolute inset-0 z-[-1] overflow-hidden bg-zinc-950">
-        {/* 动态颜色层 */}
+        {/* 鍔ㄦ€侀鑹插眰 */}
         <div
           className={cn(
             "absolute inset-0 transition-opacity duration-1000 ease-in-out",
@@ -91,7 +91,7 @@ const BackgroundLayer = memo(
           style={dynamicStyle}
         />
 
-        {/* 封面遮罩层 */}
+        {/* 灏侀潰閬僵灞?*/}
         <div
           className={cn(
             "absolute inset-0 transition-opacity duration-1000",
@@ -110,7 +110,7 @@ const BackgroundLayer = memo(
           <div className="absolute inset-0 bg-linear-to-b from-black/10 via-zinc-950/20 to-black/60" />
         </div>
 
-        {/* 兜底背景层 */}
+        {/* 鍏滃簳鑳屾櫙灞?*/}
         <div
           className={cn(
             "absolute inset-0 transition-opacity duration-1000",
@@ -127,7 +127,7 @@ const BackgroundLayer = memo(
           />
         </div>
 
-        {/* 噪点层 */}
+        {/* 鍣偣灞?*/}
         <div className="absolute inset-0 opacity-[0.02] mix-blend-overlay pointer-events-none select-none bg-[url('data:image/svg+xml,...')]" />
       </div>
     );
@@ -234,10 +234,8 @@ export function FullScreenPlayer({
   }, []);
 
   const handleClearQueue = () => {
-    if (confirm("确定要清空播放列表吗？")) {
-      clearQueue();
-      toast.success("播放列表已清空");
-    }
+    clearQueue();
+    toast.success("播放列表已清空");
   };
 
   const handleRemoveFromQueue = (track: MusicTrack) => {
@@ -263,7 +261,7 @@ export function FullScreenPlayer({
   };
 
   /**
-   * 长按复制歌曲信息
+   * 闀挎寜澶嶅埗姝屾洸淇℃伅
    */
   const handleTrackInfoPressStart = () => {
     if (!currentTrack) return;
@@ -343,7 +341,7 @@ export function FullScreenPlayer({
         </div>
       )}
 
-      {/* 背景渲染层 */}
+      {/* 鑳屾櫙娓叉煋灞?*/}
       <BackgroundLayer
         hslColor={hslColor}
         coverUrl={coverUrl}
@@ -423,13 +421,13 @@ export function FullScreenPlayer({
             onMouseLeave={handleTrackInfoPressEnd}
             onTouchStart={handleTrackInfoPressStart}
             onTouchEnd={handleTrackInfoPressEnd}
-            title="长按复制歌曲信息"
+            title="闀挎寜澶嶅埗姝屾洸淇℃伅"
           >
             <h2 className="truncate text-xl font-semibold text-white">
-              {currentTrack?.name || "未知歌曲"}
+              {currentTrack?.name || "鏈煡姝屾洸"}
             </h2>
             <p className="truncate text-sm text-white/60 mt-1">
-              {currentTrack?.artist?.join(", ") || "未知歌手"}
+              {currentTrack?.artist?.join(", ") || "鏈煡姝屾墜"}
             </p>
           </div>
           <div className="flex items-center gap-1 shrink-0">

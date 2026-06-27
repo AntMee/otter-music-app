@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -10,6 +10,14 @@ import {
   DrawerHeader,
   DrawerTrigger,
 } from "@/components/ui/drawer";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Popover,
   PopoverContent,
@@ -44,7 +52,7 @@ interface QueueTrackItemProps {
   isCurrent: boolean;
   isPlaying: boolean;
   onSelect: () => void;
-  onRemove: () => void;
+  onRemove: (track: MusicTrack, isCurrent: boolean) => void;
   itemRef?: (el: HTMLDivElement | null) => void;
 }
 
@@ -60,10 +68,7 @@ function QueueTrackItem({
 
   const handleRemove = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isCurrent && !confirm(`确定删除�?{track.name}》吗？`)) {
-      return;
-    }
-    onRemove();
+    onRemove(track, isCurrent);
   };
 
   return (
@@ -91,7 +96,7 @@ function QueueTrackItem({
           iconClassName="h-5 w-5 text-muted-foreground/40"
         />
 
-        {/* 极致小巧的顺序波动动�?*/}
+        {/* Compact equalizer indicator for the current playing track. */}
         {isCurrent && isPlaying && (
           <div className="absolute inset-0 flex items-center justify-center gap-[3px] rounded-lg bg-black/30 backdrop-blur-[2px]">
             <div className="h-1 w-[2.5px] rounded-full bg-primary animate-[audio-bar_1s_ease-in-out_infinite]" />
@@ -119,7 +124,7 @@ function QueueTrackItem({
         <button
           className="rounded-lg p-2 text-muted-foreground/50 hover:text-foreground"
           onClick={handleRemove}
-          title={`删除`}
+          title="删除"
           aria-label={`删除 ${track.name}`}
         >
           <X className="h-5 w-5" />
@@ -145,6 +150,11 @@ export function PlayerQueueDrawer({
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
+  const [confirmState, setConfirmState] = useState<{
+    title: string;
+    description: string;
+    action: () => void;
+  } | null>(null);
 
   useEffect(() => {
     onOpenChange?.(open);
@@ -182,6 +192,40 @@ export function PlayerQueueDrawer({
     viewportRef.current?.scrollTo({ top: 0, behavior: "instant" });
   };
 
+  const handleConfirm = () => {
+    confirmState?.action();
+    setConfirmState(null);
+  };
+
+  const requestClearQueue = () => {
+    setConfirmState({
+      title: "清空播放列表",
+      description: "确定要清空当前播放列表吗？此操作不会删除本地歌曲文件。",
+      action: onClear,
+    });
+  };
+
+  const requestClearHistory = () => {
+    setConfirmState({
+      title: "清空播放历史",
+      description: "确定要清空最近播放记录吗？此操作不可恢复。",
+      action: clearHistory,
+    });
+  };
+
+  const requestRemoveTrack = (track: MusicTrack, isCurrent: boolean) => {
+    if (!isCurrent) {
+      onRemove(track);
+      return;
+    }
+
+    setConfirmState({
+      title: "删除当前播放歌曲",
+      description: `确定要从播放列表移除《${track.name}》吗？`,
+      action: () => onRemove(track),
+    });
+  };
+
   const queueContent = (
     <>
       <DrawerHeader className="shrink-0 px-6 pb-4 pt-6">
@@ -215,7 +259,7 @@ export function PlayerQueueDrawer({
             </button>
           </div>
 
-          <p className="sr-only">当前播放队列，可切换、清空或删除歌曲�?</p>
+          <p className="sr-only">当前播放队列，可切换、清空或删除歌曲。</p>
 
           <div className="flex items-center gap-2">
             {activeTab === "queue" && isShuffle && (
@@ -247,13 +291,7 @@ export function PlayerQueueDrawer({
               size="icon"
               className="h-9 w-9 text-muted-foreground/70 hover:bg-destructive/10 hover:text-destructive transition-colors"
               onClick={
-                activeTab === "queue"
-                  ? onClear
-                  : () => {
-                      if (confirm("确定清空播放历史吗？")) {
-                        clearHistory();
-                      }
-                    }
+                activeTab === "queue" ? requestClearQueue : requestClearHistory
               }
               title={activeTab === "queue" ? "清空播放列表" : "清空播放历史"}
             >
@@ -277,7 +315,7 @@ export function PlayerQueueDrawer({
                       onPlay(i);
                       setOpen(false);
                     }}
-                    onRemove={() => onRemove(track)}
+                    onRemove={requestRemoveTrack}
                     itemRef={i === currentIndex ? setCurrentRef : undefined}
                   />
                 ))
@@ -290,11 +328,11 @@ export function PlayerQueueDrawer({
                       isPlaying && track.id === queue[currentIndex]?.id
                     }
                     onSelect={() => {
-                      // 将历史歌曲加入队列并播放
+                      // Add the history track back to the queue and play it.
                       onPlayTrack?.(track);
                       setOpen(false);
                     }}
-                    onRemove={() => removeFromHistory(track.id)}
+                    onRemove={(item) => removeFromHistory(item.id)}
                   />
                 ))}
           </div>
@@ -305,34 +343,90 @@ export function PlayerQueueDrawer({
 
   if (!isMobile) {
     return (
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-        <PopoverContent
-          side="top"
-          align="center"
-          sideOffset={12}
-          collisionPadding={24}
-          className={cn(
-            "flex w-[420px] max-w-[calc(100vw-3rem)] flex-col gap-0 overflow-hidden rounded-2xl border bg-popover p-0 shadow-xl outline-none",
-            "h-[min(640px,calc(100vh-8rem))] max-h-[calc(100vh-8rem)]"
-          )}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {queueContent}
-        </PopoverContent>
-      </Popover>
+      <>
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+          <PopoverContent
+            side="top"
+            align="center"
+            sideOffset={12}
+            collisionPadding={24}
+            className={cn(
+              "flex w-[420px] max-w-[calc(100vw-3rem)] flex-col gap-0 overflow-hidden rounded-2xl border bg-popover p-0 shadow-xl outline-none",
+              "h-[min(640px,calc(100vh-8rem))] max-h-[calc(100vh-8rem)]"
+            )}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {queueContent}
+          </PopoverContent>
+        </Popover>
+
+        <ConfirmQueueDialog
+          state={confirmState}
+          onCancel={() => setConfirmState(null)}
+          onConfirm={handleConfirm}
+        />
+      </>
     );
   }
 
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>{trigger}</DrawerTrigger>
-      <DrawerContent
-        className="h-[75vh] max-h-[75vh] gap-0 rounded-t-3xl outline-none"
-        onClick={(e) => e.stopPropagation()}
+    <>
+      <Drawer open={open} onOpenChange={setOpen}>
+        <DrawerTrigger asChild>{trigger}</DrawerTrigger>
+        <DrawerContent
+          className="h-[75vh] max-h-[75vh] gap-0 rounded-t-3xl outline-none"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {queueContent}
+        </DrawerContent>
+      </Drawer>
+
+      <ConfirmQueueDialog
+        state={confirmState}
+        onCancel={() => setConfirmState(null)}
+        onConfirm={handleConfirm}
+      />
+    </>
+  );
+}
+
+function ConfirmQueueDialog({
+  state,
+  onCancel,
+  onConfirm,
+}: {
+  state: {
+    title: string;
+    description: string;
+    action: () => void;
+  } | null;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  if (!state) return null;
+
+  return (
+    <Dialog open={Boolean(state)} onOpenChange={(open) => !open && onCancel()}>
+      <DialogContent
+        className="w-[min(360px,calc(100vw-32px))] gap-5 rounded-2xl p-5"
+        showCloseButton={false}
       >
-        {queueContent}
-      </DrawerContent>
-    </Drawer>
+        <DialogHeader className="gap-2 text-left">
+          <DialogTitle className="text-base">{state?.title}</DialogTitle>
+          <DialogDescription className="leading-6">
+            {state?.description}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="flex-row justify-end gap-2">
+          <Button variant="outline" onClick={onCancel}>
+            取消
+          </Button>
+          <Button variant="destructive" onClick={onConfirm}>
+            确定
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
