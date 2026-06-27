@@ -7,6 +7,7 @@ import {
   SearchIntent,
 } from "@/types/music";
 import { mergeAndSortTracks } from "@/lib/utils/search-helper";
+import { logger } from "@/lib/logger";
 
 type ProviderResolver = (source: MusicSource) => IMusicProvider;
 
@@ -27,12 +28,19 @@ export class AggregateProvider implements IMusicProvider {
     const aggregatedSources = this.getSources();
 
     const results = await Promise.all(
-      aggregatedSources.map((s) => {
+      aggregatedSources.map(async (s) => {
         try {
-          return this.resolver(s).search(query, page, count, signal, intent);
+          return await this.resolver(s).search(
+            query,
+            page,
+            count,
+            signal,
+            intent
+          );
         } catch (e) {
-          console.warn(`Search failed for ${s}`, e);
-          return Promise.resolve({ items: [], hasMore: false });
+          if (signal?.aborted) throw e;
+          logger.warn("aggregate-provider", `Search failed for ${s}`, e);
+          return { items: [], hasMore: false };
         }
       })
     );

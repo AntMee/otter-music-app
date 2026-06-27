@@ -7,6 +7,7 @@ import type {
 } from "@otter-music/shared";
 import { getLxUrl } from "@/lib/utils/lx-api";
 import { logger } from "@/lib/logger";
+import { IS_NATIVE, IS_WEB_PROD, getProxyUrl } from "@/lib/api/config";
 
 const PAGE_SIZE = 20;
 const SEARCH_URL = "https://songsearch.kugou.com/song_search_v2";
@@ -57,7 +58,15 @@ export class LxKugouProvider {
       area_code: "1",
     });
 
-    const res = await fetch(`${SEARCH_URL}?${params.toString()}`, { signal });
+    const searchUrl = `${SEARCH_URL}?${params.toString()}`;
+    const fetchUrl =
+      !IS_NATIVE && import.meta.env.DEV
+        ? `/api/fetch?url=${encodeURIComponent(searchUrl)}`
+        : IS_WEB_PROD
+          ? getProxyUrl(searchUrl)
+          : searchUrl;
+
+    const res = await fetch(fetchUrl, { signal });
     if (!res.ok) throw new Error(`Kugou search failed: HTTP ${res.status}`);
     const json = (await res.json()) as KugouSearchResponse;
     const list = json.data?.lists ?? [];

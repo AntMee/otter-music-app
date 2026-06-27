@@ -53,11 +53,20 @@ export class ChangqingProvider implements IMusicProvider {
   }
 
   async getPic(track: MusicTrack, size?: number): Promise<string | null> {
-    return this.baseProvider.getPic(track, size);
+    if (track.pic_id) return track.pic_id;
+    try {
+      return await this.baseProvider.getPic(track, size);
+    } catch {
+      return null;
+    }
   }
 
   async getLyric(track: MusicTrack): Promise<SongLyric | null> {
-    return this.baseProvider.getLyric(track);
+    try {
+      return await this.baseProvider.getLyric(track);
+    } catch {
+      return null;
+    }
   }
 
   async searchArtist(
