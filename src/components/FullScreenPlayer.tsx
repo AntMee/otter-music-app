@@ -81,7 +81,7 @@ const BackgroundLayer = memo(
     }, [hslColor, showThemeColor]);
 
     return (
-      <div className="absolute inset-0 z-[-1] overflow-hidden bg-zinc-950">
+      <div className="absolute inset-0 z-0 overflow-hidden bg-zinc-950">
         {/* 鍔ㄦ€侀鑹插眰 */}
         <div
           className={cn(
@@ -324,7 +324,7 @@ export function FullScreenPlayer({
   return createPortal(
     <div
       className={cn(
-        "fixed inset-0 z-50 transition-transform duration-500 ease-in-out flex flex-col",
+        "fixed inset-0 z-50 isolate overflow-hidden bg-zinc-950 transition-transform duration-500 ease-in-out flex flex-col",
         isFullScreen ? "translate-y-0" : "translate-y-full"
       )}
     >

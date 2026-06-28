@@ -1,5 +1,11 @@
 apply plugin: 'com.android.application'
 
+def hasReleaseSigningConfig =
+    project.hasProperty('OTTER_RELEASE_STORE_FILE') &&
+    project.hasProperty('OTTER_RELEASE_STORE_PASSWORD') &&
+    project.hasProperty('OTTER_RELEASE_KEY_ALIAS') &&
+    project.hasProperty('OTTER_RELEASE_KEY_PASSWORD')
+
 android {
     namespace 'com.otterhub.music'
     compileSdk 36
@@ -8,8 +14,21 @@ android {
         applicationId "com.otterhub.music"
         minSdk 24
         targetSdk 36
-        versionCode 44
-        versionName "2.4.7"
+        versionCode 53
+        versionName "2.4.9"
+    }
+
+    signingConfigs {
+        if (hasReleaseSigningConfig) {
+            release {
+                storeFile file(OTTER_RELEASE_STORE_FILE)
+                storePassword OTTER_RELEASE_STORE_PASSWORD
+                keyAlias OTTER_RELEASE_KEY_ALIAS
+                keyPassword OTTER_RELEASE_KEY_PASSWORD
+                v1SigningEnabled true
+                v2SigningEnabled true
+            }
+        }
     }
 
     buildTypes {
@@ -20,6 +39,9 @@ android {
         release {
             minifyEnabled true
             shrinkResources true
+            if (hasReleaseSigningConfig) {
+                signingConfig signingConfigs.release
+            }
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }

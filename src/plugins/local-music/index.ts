@@ -45,6 +45,11 @@ export interface DeleteResult {
   error?: string;
 }
 
+export interface ScanAllStorageOptions {
+  directoryPath?: string;
+  minFileSizeBytes?: number;
+}
+
 export interface PickDirectoryResult {
   success: boolean;
   path?: string;
@@ -62,7 +67,7 @@ export interface DarkModeChangeEvent {
 
 export interface LocalMusicPlugin {
   scanLocalMusic(): Promise<ScanResult>;
-  scanAllStorage(): Promise<ScanResult>;
+  scanAllStorage(options?: ScanAllStorageOptions): Promise<ScanResult>;
   getLocalFileUrl(options: { localPath: string }): Promise<LocalFileUrlResult>;
   getEmbeddedCover(options: {
     localPath: string;

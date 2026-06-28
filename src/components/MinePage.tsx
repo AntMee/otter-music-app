@@ -104,9 +104,12 @@ export function MinePage({ onSelectPlaylist }: MinePageProps) {
             onClick={() => navigate("/history")}
             className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-2xl border border-border/50 bg-card/75 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:bg-card hover:shadow-sm md:min-h-32"
           >
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0 flex-[0_0_48px] min-w-12 min-h-12">
+            <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center shrink-0 flex-[0_0_48px] min-w-12 min-h-12">
               <div className="h-6 w-6 shrink-0 flex-[0_0_24px] min-w-6 min-h-6">
-                <History size={24} className="h-full w-full text-primary" />
+                <History
+                  size={24}
+                  className="h-full w-full text-primary-foreground"
+                />
               </div>
             </div>
             <span className="text-sm font-medium text-foreground">历史</span>
@@ -116,9 +119,12 @@ export function MinePage({ onSelectPlaylist }: MinePageProps) {
             onClick={() => navigate("/queue")}
             className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-2xl border border-border/50 bg-card/75 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:bg-card hover:shadow-sm md:min-h-32"
           >
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0 flex-[0_0_48px] min-w-12 min-h-12">
+            <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center shrink-0 flex-[0_0_48px] min-w-12 min-h-12">
               <div className="h-6 w-6 shrink-0 flex-[0_0_24px] min-w-6 min-h-6">
-                <ListVideo size={24} className="h-full w-full text-primary" />
+                <ListVideo
+                  size={24}
+                  className="h-full w-full text-primary-foreground"
+                />
               </div>
             </div>
             <span className="text-sm font-medium text-foreground">列表</span>
@@ -128,11 +134,11 @@ export function MinePage({ onSelectPlaylist }: MinePageProps) {
             onClick={() => navigate("/local")}
             className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-2xl border border-border/50 bg-card/75 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:bg-card hover:shadow-sm md:min-h-32"
           >
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0 flex-[0_0_48px] min-w-12 min-h-12">
+            <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center shrink-0 flex-[0_0_48px] min-w-12 min-h-12">
               <div className="h-6 w-6 shrink-0 flex-[0_0_24px] min-w-6 min-h-6">
                 <HardDriveDownload
                   size={24}
-                  className="h-full w-full text-primary"
+                  className="h-full w-full text-primary-foreground"
                 />
               </div>
             </div>
@@ -143,9 +149,12 @@ export function MinePage({ onSelectPlaylist }: MinePageProps) {
             onClick={() => navigate("/settings")}
             className="flex min-h-28 flex-col items-center justify-center gap-2 rounded-2xl border border-border/50 bg-card/75 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:bg-card hover:shadow-sm md:min-h-32"
           >
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0 flex-[0_0_48px] min-w-12 min-h-12">
+            <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center shrink-0 flex-[0_0_48px] min-w-12 min-h-12">
               <div className="h-6 w-6 shrink-0 flex-[0_0_24px] min-w-6 min-h-6">
-                <Settings size={24} className="h-full w-full text-primary" />
+                <Settings
+                  size={24}
+                  className="h-full w-full text-primary-foreground"
+                />
               </div>
             </div>
             <span className="text-sm font-medium text-foreground">设置</span>

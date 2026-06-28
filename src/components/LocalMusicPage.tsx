@@ -7,6 +7,8 @@ import {
   HardDrive,
   HardDriveDownload,
   WifiOff,
+  FolderOpen,
+  RotateCcw,
 } from "lucide-react";
 import { LocalMusicPlugin, LocalMusicFile } from "@/plugins/local-music";
 import { MusicTrack } from "@/types/music";
@@ -79,6 +81,7 @@ export function LocalMusicPage({
   const [deleteTarget, setDeleteTarget] = useState<MusicTrack | null>(null);
   const [deleteTargets, setDeleteTargets] = useState<MusicTrack[]>([]);
   const [deleteLocalFile, setDeleteLocalFile] = useState(false);
+  const [isPickingScanDirectory, setIsPickingScanDirectory] = useState(false);
 
   /* =========================
      Store
@@ -91,7 +94,16 @@ export function LocalMusicPage({
       isShuffle: state.isShuffle,
     }))
   );
-  const { files, setFiles, updateFiles, setScanning } = useLocalMusicStore();
+  const {
+    files,
+    setFiles,
+    updateFiles,
+    setScanning,
+    scanDirectory,
+    minScanFileSizeMb,
+    setScanDirectory,
+    setMinScanFileSizeMb,
+  } = useLocalMusicStore();
   const navigate = useNavigate();
 
   /* =========================
@@ -107,13 +119,22 @@ export function LocalMusicPage({
         const result =
           type === "quick"
             ? await LocalMusicPlugin.scanLocalMusic()
-            : await LocalMusicPlugin.scanAllStorage();
+            : await LocalMusicPlugin.scanAllStorage({
+                directoryPath: scanDirectory || undefined,
+                minFileSizeBytes: Math.max(0, minScanFileSizeMb) * 1024 * 1024,
+              });
 
         if (result.success) {
+          const minFileSizeBytes =
+            type === "full" ? Math.max(0, minScanFileSizeMb) * 1024 * 1024 : 0;
+          const scannedFiles =
+            type === "full"
+              ? result.files.filter((file) => file.fileSize >= minFileSizeBytes)
+              : result.files;
           const merged =
             type === "full"
-              ? mergeLocalMusicFiles(files, result.files)
-              : result.files;
+              ? mergeLocalMusicFiles(files, scannedFiles)
+              : scannedFiles;
           setFiles(merged);
           return merged.length;
         }
@@ -133,7 +154,7 @@ export function LocalMusicPage({
         setScanning(false);
       }
     },
-    [files, setFiles, setScanning]
+    [files, minScanFileSizeMb, scanDirectory, setFiles, setScanning]
   );
 
   /* =========================
@@ -179,6 +200,23 @@ export function LocalMusicPage({
       error: (err: Error) => err.message,
     });
   };
+
+  const handlePickScanDirectory = useCallback(async () => {
+    if (isPickingScanDirectory) return;
+
+    setIsPickingScanDirectory(true);
+    try {
+      const result = await LocalMusicPlugin.pickDownloadDirectory();
+      if (result.success && result.path !== undefined) {
+        setScanDirectory(result.path);
+      }
+    } catch (err) {
+      logger.error("LocalMusicPage", "Pick local scan directory failed", err);
+      toast.error("选择扫描目录失败");
+    } finally {
+      setIsPickingScanDirectory(false);
+    }
+  }, [isPickingScanDirectory, setScanDirectory]);
 
   /* =========================
      删除
@@ -339,28 +377,82 @@ export function LocalMusicPage({
         </button>
       }
     >
-      <div className="flex-1 min-h-0 overflow-hidden bg-background md:bg-muted/25 md:p-6 lg:p-8">
-        <div className="mx-auto flex h-full max-w-7xl overflow-hidden bg-background md:rounded-2xl md:border md:shadow-sm">
-          <MusicPlaylistView
-            title="本地音乐"
-            tracks={tracks}
-            icon={<HardDriveDownload className="h-8 w-8 text-primary/80" />}
-            onPlay={handlePlay}
-            currentTrackId={currentTrackId}
-            isPlaying={isPlaying}
-            onRemove={handleDeleteTrack}
-            onBatchRemove={handleBatchDeleteTracks}
-            removeLabel="删除"
-            confirmRemove={false}
-            action={
-              <button
-                onClick={() => navigate("/playlist/__offline__")}
-                className="flex items-center gap-1.5 px-3 h-8 rounded-full text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+      <div
+        data-testid="local-music-scroll-region"
+        className="flex-1 min-h-0 overflow-y-auto bg-background md:bg-muted/25 md:p-6 lg:p-8"
+      >
+        <div className="mx-auto flex min-h-full max-w-7xl flex-col gap-3">
+          <div className="flex flex-col gap-3 rounded-xl border border-border/60 bg-background/90 p-3 text-sm shadow-sm md:flex-row md:items-center md:justify-between">
+            <div className="min-w-0">
+              <div className="font-medium text-foreground">扫描范围</div>
+              <div className="truncate text-xs text-muted-foreground">
+                {scanDirectory || "默认全盘扫描"}
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-2 rounded-lg border border-border/60 px-2 py-1.5">
+                <span className="text-xs text-muted-foreground">最小文件</span>
+                <input
+                  aria-label="最小扫描文件大小"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={String(minScanFileSizeMb)}
+                  onInput={(event) => {
+                    const digits = event.currentTarget.value.replace(/\D/g, "");
+                    const nextValue = digits ? Number(digits) : 0;
+                    event.currentTarget.value = String(nextValue);
+                    setMinScanFileSizeMb(nextValue);
+                  }}
+                  className="h-7 w-16 rounded-md border border-border/60 bg-transparent px-2 text-right text-sm outline-none focus:border-primary"
+                />
+                <span className="text-xs text-muted-foreground">MB</span>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handlePickScanDirectory}
+                disabled={isPickingScanDirectory}
               >
-                <WifiOff size={14} className="shrink-0" />
-              </button>
-            }
-          />
+                <FolderOpen className="h-4 w-4" />
+                {isPickingScanDirectory ? "选择中" : "指定文件夹"}
+              </Button>
+              {scanDirectory && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => setScanDirectory("")}
+                  aria-label="重置扫描目录"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className="min-h-0 flex-1 bg-background md:rounded-2xl md:border md:shadow-sm">
+            <MusicPlaylistView
+              title="本地音乐"
+              tracks={tracks}
+              icon={<HardDriveDownload className="h-8 w-8 text-primary/80" />}
+              onPlay={handlePlay}
+              currentTrackId={currentTrackId}
+              isPlaying={isPlaying}
+              onRemove={handleDeleteTrack}
+              onBatchRemove={handleBatchDeleteTracks}
+              removeLabel="删除"
+              confirmRemove={false}
+              action={
+                <button
+                  onClick={() => navigate("/playlist/__offline__")}
+                  className="flex items-center gap-1.5 px-3 h-8 rounded-full text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                >
+                  <WifiOff size={14} className="shrink-0" />
+                </button>
+              }
+            />
+          </div>
         </div>
       </div>
 

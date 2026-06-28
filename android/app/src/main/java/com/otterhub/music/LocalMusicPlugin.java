@@ -244,8 +244,11 @@ public class LocalMusicPlugin extends Plugin {
         scanExecutor.execute(() -> {
             try {
                 List<JSObject> filesList = new ArrayList<>();
-                File extStorage = Environment.getExternalStorageDirectory();
-                if (extStorage != null && extStorage.canRead()) scanDirectory(extStorage, filesList, 0);
+                File scanRoot = resolveScanRoot(call.getString("directoryPath"));
+                long minFileSizeBytes = Math.max(0L, call.getLong("minFileSizeBytes", 0L));
+                if (scanRoot != null && scanRoot.canRead()) {
+                    scanDirectory(scanRoot, filesList, 0, minFileSizeBytes);
+                }
 
                 JSArray filesArray = new JSArray();
                 for (JSObject file : filesList) filesArray.put(file);
@@ -259,7 +262,19 @@ public class LocalMusicPlugin extends Plugin {
         });
     }
 
-    private void scanDirectory(File directory, List<JSObject> filesList, int depth) {
+    private File resolveScanRoot(String directoryPath) {
+        File extStorage = Environment.getExternalStorageDirectory();
+        if (extStorage == null) return null;
+        if (!isValid(directoryPath)) return extStorage;
+
+        File requested = new File(directoryPath);
+        if (!requested.isAbsolute()) {
+            requested = new File(extStorage, directoryPath);
+        }
+        return requested;
+    }
+
+    private void scanDirectory(File directory, List<JSObject> filesList, int depth, long minFileSizeBytes) {
         if (depth > MAX_DEPTH || directory == null || !directory.canRead() || filesList.size() >= MAX_FILES) return;
         if (directory.getName().startsWith(".") || isSystemDirectory(directory)) return;
 
@@ -272,8 +287,8 @@ public class LocalMusicPlugin extends Plugin {
         for (File file : children) {
             if (filesList.size() >= MAX_FILES) return;
             if (file.isDirectory()) {
-                scanDirectory(file, filesList, depth + 1);
-            } else if (isAudioFile(file.getName())) {
+                scanDirectory(file, filesList, depth + 1, minFileSizeBytes);
+            } else if (isAudioFile(file.getName()) && file.length() >= minFileSizeBytes) {
                 JSObject audioFile = extractAudioMetadata(file);
                 if (audioFile != null) filesList.add(audioFile);
             }

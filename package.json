@@ -23,8 +23,8 @@
     "cap:open:android": "npx cap open android",
     "cap:update:android": "npx cap update android",
     "version": "node scripts/update-mobile-version.js && git add android/app/build.gradle",
-    "build:android:debug": "npm run cap:sync:android && cd android && gradlew.bat assembleDebug",
-    "build:android:release": "npm run cap:sync:android && cd android && gradlew.bat assembleRelease",
+    "build:android:debug": "node scripts/update-mobile-version.js && npm run cap:sync:android && cd android && gradlew.bat assembleDebug",
+    "build:android:release": "node scripts/update-mobile-version.js && npm run cap:sync:android && cd android && gradlew.bat assembleRelease",
     "prepare": "husky"
   },
   "dependencies": {

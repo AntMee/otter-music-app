@@ -188,6 +188,12 @@ describe("LocalMusicPage", () => {
     });
   }
 
+  function clickButtonByText(text: string) {
+    Array.from(document.querySelectorAll<HTMLButtonElement>("button"))
+      .find((button) => button.textContent?.includes(text))
+      ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  }
+
   it("orders local tracks by modified time descending and keeps play queue in the same order", () => {
     const onPlay = renderPage();
 
@@ -221,21 +227,124 @@ describe("LocalMusicPage", () => {
     renderPage();
 
     await act(async () => {
-      Array.from(container?.querySelectorAll<HTMLButtonElement>("button") ?? [])
-        .find((button) => button.textContent?.includes("全盘扫描"))
+      container
+        ?.querySelector<HTMLButtonElement>("button")
         ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
     expect(LocalMusicPlugin.scanAllStorage).toHaveBeenCalledTimes(1);
   });
 
-  it("removes local track from the current list without deleting the file by default", async () => {
+  it("passes local scan directory and minimum file size to full scan", async () => {
+    useLocalMusicStore.setState({
+      scanDirectory: "/Music",
+      minScanFileSizeMb: 5,
+    } as Partial<ReturnType<typeof useLocalMusicStore.getState>>);
+
     renderPage();
 
     await act(async () => {
       container
-        ?.querySelector<HTMLButtonElement>("button:nth-of-type(2)")
+        ?.querySelector<HTMLButtonElement>("button")
         ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(LocalMusicPlugin.scanAllStorage).toHaveBeenCalledWith({
+      directoryPath: "/Music",
+      minFileSizeBytes: 5 * 1024 * 1024,
+    });
+  });
+
+  it("filters full scan results below the minimum file size before rendering", async () => {
+    useLocalMusicStore.setState({
+      files: [
+        {
+          id: "cached",
+          name: "Cached Song",
+          artist: "Artist",
+          album: "Album",
+          duration: 1000,
+          localPath: "/music/cached.mp3",
+          fileSize: 4 * 1024 * 1024,
+          modifiedTime: 1000,
+        },
+      ],
+      minScanFileSizeMb: 3,
+    } as Partial<ReturnType<typeof useLocalMusicStore.getState>>);
+    vi.mocked(LocalMusicPlugin.scanAllStorage).mockResolvedValue({
+      success: true,
+      files: [
+        {
+          id: "small",
+          name: "Small Recording",
+          artist: "Unknown",
+          album: "Album",
+          duration: 1000,
+          localPath: "/music/small.mp3",
+          fileSize: 2 * 1024 * 1024,
+          modifiedTime: 3000,
+        },
+        {
+          id: "large",
+          name: "Large Song",
+          artist: "Artist",
+          album: "Album",
+          duration: 1000,
+          localPath: "/music/large.mp3",
+          fileSize: 4 * 1024 * 1024,
+          modifiedTime: 4000,
+        },
+      ],
+    });
+
+    renderPage();
+
+    await act(async () => {
+      container
+        ?.querySelector<HTMLButtonElement>("button")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(
+      useLocalMusicStore.getState().files.map((file) => file.name)
+    ).toEqual(["Large Song"]);
+  });
+
+  it("normalizes the minimum file size input without leading zeroes", () => {
+    renderPage();
+
+    const input = container?.querySelector<HTMLInputElement>(
+      "input[aria-label='最小扫描文件大小']"
+    );
+
+    expect(input).toBeDefined();
+
+    act(() => {
+      input!.value = "03";
+      input!.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    expect(useLocalMusicStore.getState().minScanFileSizeMb).toBe(3);
+    expect(input?.value).toBe("3");
+  });
+
+  it("keeps the local music page scrollable after scan results are rendered", () => {
+    renderPage();
+
+    const scrollRegion = container?.querySelector(
+      "[data-testid='local-music-scroll-region']"
+    );
+
+    expect(scrollRegion).toBeDefined();
+    expect(scrollRegion?.className).toContain("overflow-y-auto");
+    expect(scrollRegion?.className).not.toContain("overflow-hidden");
+  });
+
+  it("removes local track from the current list without deleting the file by default", async () => {
+    renderPage();
+
+    await act(async () => {
+      clickButtonByText("delete New Song");
     });
 
     await act(async () => {
@@ -256,9 +365,7 @@ describe("LocalMusicPage", () => {
     renderPage();
 
     await act(async () => {
-      container
-        ?.querySelector<HTMLButtonElement>("button:nth-of-type(2)")
-        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      clickButtonByText("delete New Song");
     });
     await act(async () => {
       document
