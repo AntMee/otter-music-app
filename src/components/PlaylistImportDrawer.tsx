@@ -36,7 +36,11 @@ import {
 import type { MusicTrack } from "@/types/music";
 
 function parseInput(text: string) {
-  return text.trim().match(/https?:\/\/[^\s]+/i)?.[0] || "";
+  return text.trim().match(/https?:\/\/[^\s]+/i)?.[0] || text.trim();
+}
+
+function detectImportPlatform(input: string): Platform | null {
+  return kugou.isKugouCodeInput(input) ? "kugou" : detectPlatform(input);
 }
 
 const PLATFORM_LABELS: Record<Platform, string> = {
@@ -175,7 +179,7 @@ export function PlaylistImportDrawer({
     readClipboardText()
       .then((text) => {
         const extractedUrl = parseInput(text);
-        const platform = detectPlatform(extractedUrl);
+        const platform = detectImportPlatform(extractedUrl);
         if (extractedUrl && platform) {
           setUrl(extractedUrl);
           toastUtils.success(`已识别${PLATFORM_LABELS[platform]}歌单链接`, {
@@ -191,10 +195,10 @@ export function PlaylistImportDrawer({
     const trimmed = url.trim();
     if (!trimmed) return;
 
-    const platform = detectPlatform(trimmed);
+    const platform = detectImportPlatform(trimmed);
     if (!platform) {
       setErrorMsg(
-        "不支持的链接格式，目前支持网易云、QQ、酷狗、酷我、咪咕音乐和 Apple Music 的歌单链接"
+        "不支持的链接格式，目前支持网易云、QQ、酷狗、酷我、咪咕音乐和 Apple Music 的歌单链接；酷狗 APP 可输入纯数字酷狗码"
       );
       setPhase("error");
       return;
@@ -384,7 +388,7 @@ export function PlaylistImportDrawer({
                   <Link2 className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     className="pl-9 h-11 bg-muted/40 border-none rounded-xl focus-visible:ring-1 font-mono text-sm"
-                    placeholder="输入歌单链接..."
+                    placeholder="输入歌单链接或纯数字酷狗码..."
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleFetch()}
@@ -392,7 +396,7 @@ export function PlaylistImportDrawer({
                   />
                 </div>
                 <p className="text-xs text-muted-foreground px-1">
-                  「在官方 APP 打开歌单」 → 「分享」 → 「复制链接」
+                  仅支持酷狗APP通过酷狗码导入，输入纯数字酷狗码即可。导入时间和歌单大小有关，请耐心等待。
                 </p>
               </>
             )}

@@ -150,6 +150,43 @@ export default defineConfig({
       },
     },
     {
+      name: "kugou-code-import",
+      configureServer(server) {
+        const proxyJson = (route: string, target: string): void => {
+          server.middlewares.use(route, async (req, res) => {
+            if (req.method !== "POST") {
+              res.statusCode = 405;
+              res.end();
+              return;
+            }
+            let body = "";
+            req.on("data", (chunk: Buffer) => (body += chunk.toString()));
+            req.on("end", async () => {
+              try {
+                const fetchRes = await fetch(target, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body,
+                });
+                res.statusCode = fetchRes.status;
+                res.setHeader("Content-Type", "application/json");
+                res.end(await fetchRes.text());
+              } catch {
+                res.statusCode = 502;
+                res.end(JSON.stringify({ error: "Kugou code proxy failed" }));
+              }
+            });
+          });
+        };
+
+        proxyJson("/api/kugou-code-command", "http://t.kugou.com/command/");
+        proxyJson(
+          "/api/kugou-code-playlist",
+          "http://www2.kugou.kugou.com/apps/kucodeAndShare/app/"
+        );
+      },
+    },
+    {
       name: "migu-resolve",
       configureServer(server) {
         server.middlewares.use("/api/migu-resolve", async (req, res) => {

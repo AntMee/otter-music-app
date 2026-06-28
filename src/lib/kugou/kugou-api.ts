@@ -2,8 +2,10 @@ import { getApiUrl, IS_NATIVE, IS_WEB_PROD } from "@/lib/api/config";
 import {
   buildKugouAndroidHeaders,
   convertKugouSongToMusicTrack,
+  fetchKugouCodePlaylistDetail,
   fetchKugouGlobalPlaylistPages,
   fetchKugouPlaylistPages,
+  isKugouCodeInput,
   isKugouGlobalCollectionId,
   KUGOU_PAGE_SIZE,
   parseKugouDeviceRegistrationResponse,
@@ -53,6 +55,7 @@ const DEVICE_MID = getDeviceMid();
 
 export {
   convertKugouSongToMusicTrack,
+  isKugouCodeInput,
   isKugouGlobalCollectionId,
   KUGOU_PAGE_SIZE,
 };
@@ -128,6 +131,8 @@ export function parseKugouPlaylistUrl(urlStr: string): string | null {
 export async function resolveKugouPlaylistId(
   urlStr: string
 ): Promise<string | null> {
+  if (isKugouCodeInput(urlStr)) return urlStr.trim();
+
   try {
     const url = new URL(
       urlStr.startsWith("http") ? urlStr : `https://${urlStr}`
@@ -182,6 +187,10 @@ export async function getKugouPlaylistDetail(
     return res.json();
   }
 
+  if (isKugouCodeInput(playlistId)) {
+    return getKugouCodePlaylistDetail(playlistId);
+  }
+
   if (isKugouGlobalCollectionId(playlistId)) {
     return getKugouGlobalPlaylistDetail(playlistId);
   }
@@ -214,6 +223,39 @@ export async function getKugouPlaylistDetail(
     );
     if (!res.ok) return null;
     return res.text();
+  });
+}
+
+async function getKugouCodePlaylistDetail(
+  codeInput: string
+): Promise<KugouPlaylistDetail> {
+  if (IS_NATIVE) {
+    const { CapacitorHttp } = await import("@capacitor/core");
+    return fetchKugouCodePlaylistDetail(codeInput, async (url, body) => {
+      const res = await CapacitorHttp.request({
+        method: "POST",
+        url,
+        headers: { "Content-Type": "application/json" },
+        data: body,
+      });
+      if (res.status >= 400)
+        throw new Error(`Kugou code API error: ${res.status}`);
+      return typeof res.data === "string" ? JSON.parse(res.data) : res.data;
+    });
+  }
+
+  let callIndex = 0;
+  return fetchKugouCodePlaylistDetail(codeInput, async (_url, body) => {
+    callIndex += 1;
+    const endpoint =
+      callIndex === 1 ? "/api/kugou-code-command" : "/api/kugou-code-playlist";
+    const res = await fetchWithTimeout(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`Kugou code API error: ${res.status}`);
+    return res.json();
   });
 }
 

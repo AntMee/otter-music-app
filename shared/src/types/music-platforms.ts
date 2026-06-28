@@ -46,6 +46,7 @@ export interface KugouSongRaw {
   HASH?: string;
   audio_id?: number | string;
   album_audio_id?: number | string;
+  name?: string;
   songname?: string;
   audio_name?: string;
   filename?: string;
@@ -64,6 +65,36 @@ export interface KugouPlaylistDetail {
   coverUrl: string;
   trackCount: number;
   songs: KugouSongRaw[];
+}
+
+export interface KugouCodeCommandResponse {
+  status: number;
+  err_code?: number;
+  error?: string;
+  data?: {
+    info?: {
+      type?: number;
+      username?: string;
+      name?: string;
+      img?: string;
+      img_size?: string;
+      id?: string;
+      count?: number;
+      global_collection_id?: string;
+      src_collection_id?: string;
+      collect_type?: string;
+      userid?: string;
+      copy_gcid?: string;
+      is_edit?: number;
+    };
+  };
+}
+
+export interface KugouCodePlaylistResponse {
+  status?: number;
+  err_code?: number;
+  error?: string;
+  data?: KugouSongRaw[];
 }
 
 // ============================================================

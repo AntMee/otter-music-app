@@ -12,6 +12,8 @@ async function ensureForge() {
   await _forgePromise;
 }
 import type {
+  KugouCodeCommandResponse,
+  KugouCodePlaylistResponse,
   KugouGlobalPlaylistInfoResponse,
   KugouGlobalPlaylistSongsResponse,
   KugouPlaylistDetail,
@@ -25,6 +27,15 @@ import type {
 
 export const KUGOU_PAGE_SIZE = 100;
 export const KUGOU_ANDROID_SIGN_KEY = "OIlwieks28dk2k092lksi2UIkp";
+export const KUGOU_CODE_COMMAND_URL = "http://t.kugou.com/command/";
+export const KUGOU_CODE_PLAYLIST_URL =
+  "http://www2.kugou.kugou.com/apps/kucodeAndShare/app/";
+export const KUGOU_CODE_COMMAND_MID = "21511157a05844bd085308bc76ef3343";
+export const KUGOU_CODE_PLAYLIST_MID = "70a02aad1ce4648e7dca77f2afa7b182";
+export const KUGOU_CODE_COMMAND_CLIENTTIME = 640612895;
+export const KUGOU_CODE_PLAYLIST_CLIENTTIME = 722219501;
+export const KUGOU_CODE_COMMAND_KEY = "36164c4015e704673c588ee202b9ecb8";
+export const KUGOU_CODE_PLAYLIST_KEY = "381d7062030e8a5a94cfbe50bfe65433";
 export const KUGOU_RSA_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
 MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDIAG7QOELSYoIJvTFJhMpe1s/g
 bjDJX51HBNnEl5HXqTW6lQ7LC8jr9fWZTwusknp+sVGzwd40MwP6U5yDE27M/X1+
@@ -49,6 +60,17 @@ export function isKugouGlobalCollectionId(playlistId: string): boolean {
   return /^gcid_[a-z0-9]+$/i.test(playlistId);
 }
 
+export function extractKugouCode(input: string): string | null {
+  const trimmed = input.trim();
+  if (/^https?:\/\//i.test(trimmed)) return null;
+  const match = trimmed.match(/^(?:.*?)(\d{6,})(?:.*?)$/);
+  return match?.[1] || null;
+}
+
+export function isKugouCodeInput(input: string): boolean {
+  return !!extractKugouCode(input);
+}
+
 export function decodeHtmlEntities(text: string): string {
   return text
     .replace(/&amp;/g, "&")
@@ -61,7 +83,11 @@ export function decodeHtmlEntities(text: string): string {
 export function getPlaylistCoverUrl(songs: KugouSongRaw[]): string {
   const cover = songs.find((s) => s.trans_param?.union_cover)?.trans_param
     ?.union_cover;
-  return cover?.replace("{size}", "300") || "";
+  return normalizeKugouCover(cover);
+}
+
+function normalizeKugouCover(url?: string): string {
+  return url?.replace("{size}", "300") || "";
 }
 
 // ============================================================
@@ -182,6 +208,64 @@ export async function buildKugouGlobalPlaylistInfoUrl(
   );
 }
 
+export async function buildKugouCodeCommandPayload(codeInput: string): Promise<{
+  appid: number;
+  clientver: number;
+  mid: string;
+  clienttime: number;
+  key: string;
+  data: string;
+}> {
+  const code = extractKugouCode(codeInput);
+  if (!code) throw new Error("无法识别酷狗码");
+  return {
+    appid: 1001,
+    clientver: 9020,
+    mid: KUGOU_CODE_COMMAND_MID,
+    clienttime: KUGOU_CODE_COMMAND_CLIENTTIME,
+    key: KUGOU_CODE_COMMAND_KEY,
+    data: code,
+  };
+}
+
+export async function buildKugouCodePlaylistPayload(info: {
+  id?: string;
+  userid?: string;
+  collect_type?: string;
+  count?: number;
+}): Promise<{
+  appid: number;
+  clientver: number;
+  mid: string;
+  clienttime: number;
+  key: string;
+  data: {
+    id: string;
+    type: number;
+    userid: string;
+    collect_type: string;
+    page: number;
+    pagesize: number;
+  };
+}> {
+  if (!info.id || !info.userid) throw new Error("酷狗码未返回有效歌单信息");
+  return {
+    appid: 1001,
+    clientver: 10112,
+    mid: KUGOU_CODE_PLAYLIST_MID,
+    clienttime: KUGOU_CODE_PLAYLIST_CLIENTTIME,
+    key: KUGOU_CODE_PLAYLIST_KEY,
+    data: {
+      id: info.id,
+      type: 3,
+      userid: info.userid,
+      collect_type: info.collect_type || "0",
+      page: 1,
+      pagesize: Math.max(1, info.count || KUGOU_PAGE_SIZE),
+    },
+  };
+}
+
 // ============================================================
 // JSON / HTML 解析
 // ============================================================
@@ -206,6 +290,18 @@ export function parseKugouGlobalPlaylistInfoResponse(
   text: string
 ): KugouGlobalPlaylistInfoResponse {
   return JSON.parse(text) as KugouGlobalPlaylistInfoResponse;
+}
+
+export function parseKugouCodeCommandResponse(
+  text: string
+): KugouCodeCommandResponse {
+  return JSON.parse(text) as KugouCodeCommandResponse;
+}
+
+export function parseKugouCodePlaylistResponse(
+  text: string
+): KugouCodePlaylistResponse {
+  return JSON.parse(text) as KugouCodePlaylistResponse;
 }
 
 export function parseKugouPlaylistTitle(html: string): string | null {
@@ -238,8 +334,12 @@ function normalizeArtists(song: KugouSongRaw): string[] {
     .filter(Boolean);
 }
 
+function stripAudioExtension(name: string): string {
+  return name.replace(/\.(mp3|flac|m4a|wav|aac|ogg|ape)$/i, "").trim();
+}
+
 function splitFilename(filename: string): { artist: string; title: string } {
-  const [artist, ...titleParts] = filename.split(" - ");
+  const [artist, ...titleParts] = stripAudioExtension(filename).split(" - ");
   return {
     artist: titleParts.length ? artist : "",
     title: titleParts.join(" - "),
@@ -250,9 +350,10 @@ function stripArtistsFromFilename(filename: string, artists: string[]): string {
   const parsed = splitFilename(filename);
   if (parsed.title) return parsed.title;
   const prefix = artists.join("、");
-  return prefix && filename.startsWith(`${prefix} - `)
-    ? filename.slice(prefix.length + 3)
-    : filename;
+  const normalized = stripAudioExtension(filename);
+  return prefix && normalized.startsWith(`${prefix} - `)
+    ? normalized.slice(prefix.length + 3)
+    : normalized;
 }
 
 export function convertKugouSongToMusicTrack(song: KugouSongRaw): MusicTrack {
@@ -265,13 +366,14 @@ export function convertKugouSongToMusicTrack(song: KugouSongRaw): MusicTrack {
     song.filename ||
     "unknown";
   const artists = normalizeArtists(song);
-  const name =
+  const rawName =
     song.songname ||
     song.audio_name ||
+    song.name ||
     stripArtistsFromFilename(song.filename || "", artists) ||
     "未知歌曲";
-  const coverUrl =
-    song.trans_param?.union_cover?.replace("{size}", "300") || "";
+  const name = stripAudioExtension(rawName);
+  const coverUrl = normalizeKugouCover(song.trans_param?.union_cover) || "";
 
   return {
     id: `kugou_${rawId}`,
@@ -282,6 +384,48 @@ export function convertKugouSongToMusicTrack(song: KugouSongRaw): MusicTrack {
     url_id: String(rawId),
     lyric_id: String(rawId),
     source: "kugou",
+  };
+}
+
+export async function fetchKugouCodePlaylistDetail(
+  codeInput: string,
+  fetchJson: (url: string, body: unknown) => Promise<unknown>
+): Promise<KugouPlaylistDetail> {
+  const commandPayload = await buildKugouCodeCommandPayload(codeInput);
+  const command = (await fetchJson(
+    KUGOU_CODE_COMMAND_URL,
+    commandPayload
+  )) as KugouCodeCommandResponse;
+
+  if (command.status !== 1 || command.err_code !== 0) {
+    throw new Error(command.error || "酷狗码解析失败");
+  }
+
+  const info = command.data?.info;
+  const playlistPayload = await buildKugouCodePlaylistPayload({
+    id: info?.id,
+    userid: info?.userid || info?.username,
+    collect_type: info?.collect_type,
+    count: info?.count,
+  });
+
+  const response = (await fetchJson(
+    KUGOU_CODE_PLAYLIST_URL,
+    playlistPayload
+  )) as KugouCodePlaylistResponse;
+
+  if (response.status && response.status !== 1) {
+    throw new Error(response.error || "酷狗码歌单接口返回异常");
+  }
+
+  const songs = Array.isArray(response.data) ? response.data : [];
+  if (!songs.length) throw new Error("歌单为空，无法导入");
+
+  return {
+    name: info?.name || "酷狗码歌单",
+    coverUrl: normalizeKugouCover(info?.img_size) || info?.img || "",
+    trackCount: info?.count || songs.length,
+    songs,
   };
 }
 

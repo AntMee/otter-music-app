@@ -7,7 +7,7 @@ import { useState, useMemo, useRef } from "react";
 import { MusicCover } from "./MusicCover";
 import { PlaylistCover } from "./PlaylistCover";
 import { PlaylistOperations } from "./PlaylistOperations";
-import { MusicTrack } from "@/types/music";
+import { MusicSource, MusicTrack, sourceLabels } from "@/types/music";
 import { useMusicStore } from "@/store/music-store";
 import { useShallow } from "zustand/react/shallow";
 import { useDownloadStore } from "@/store/download-store";
@@ -30,6 +30,8 @@ import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { AddByUrlDrawer } from "./AddByUrlDrawer";
 import { logger } from "@/lib/logger";
+import { switchPlaylistSource } from "@/lib/playlist-source-switch";
+import { getAggregatedSourcesForMatch } from "@/hooks/use-aggregated-sources";
 
 interface MusicPlaylistViewProps {
   title: string;
@@ -78,6 +80,9 @@ export function MusicPlaylistView({
   const [searchQuery, setSearchQuery] = useState("");
   const [isCoverDialogOpen, setIsCoverDialogOpen] = useState(false);
   const [isAddByUrlOpen, setIsAddByUrlOpen] = useState(false);
+  const [isSwitchSourceOpen, setIsSwitchSourceOpen] = useState(false);
+  const [isSwitchingSource, setIsSwitchingSource] = useState(false);
+  const [switchProgress, setSwitchProgress] = useState("");
   const [coverUrlInput, setCoverUrlInput] = useState("");
   const [dedupeSelectedIds, setDedupeSelectedIds] = useState<
     Set<string> | undefined
@@ -191,6 +196,48 @@ export function MusicPlaylistView({
     toast.success("添加成功");
   };
 
+  const handleSwitchPlaylistSource = async (targetSource: MusicSource) => {
+    if (!playlistId || !isPersonalPlaylist || isSwitchingSource) return;
+    setIsSwitchingSource(true);
+    setSwitchProgress(`0/${tracks.length}`);
+    const toastId = toast.loading("正在切换歌单音源...");
+
+    try {
+      const result = await switchPlaylistSource({
+        tracks,
+        targetSource,
+        onProgress: ({ done, total, matched, failed }) => {
+          setSwitchProgress(
+            `${done}/${total}，成功 ${matched}，失败 ${failed}`
+          );
+          toast.loading(`切换中 ${done}/${total}`, { id: toastId });
+        },
+      });
+
+      useMusicStore
+        .getState()
+        .replaceActivePlaylistTracks(playlistId, result.tracks);
+      toast.success(
+        `已切换 ${result.matched} 首，保留 ${result.failed} 首未匹配歌曲`,
+        { id: toastId }
+      );
+      setIsSwitchSourceOpen(false);
+    } catch (error) {
+      logger.error(
+        "MusicPlaylistView",
+        "Switch playlist source failed",
+        error,
+        {
+          playlistId,
+          targetSource,
+        }
+      );
+      toast.error("切换歌单音源失败", { id: toastId });
+    } finally {
+      setIsSwitchingSource(false);
+    }
+  };
+
   return (
     <div
       ref={scrollContainerRef}
@@ -274,6 +321,11 @@ export function MusicPlaylistView({
                 onAddByUrl={
                   isPersonalPlaylist ? () => setIsAddByUrlOpen(true) : undefined
                 }
+                onSwitchSource={
+                  isPersonalPlaylist
+                    ? () => setIsSwitchSourceOpen(true)
+                    : undefined
+                }
                 onSort={isPersonalPlaylist ? handleSort : undefined}
               />
             )}
@@ -355,6 +407,32 @@ export function MusicPlaylistView({
         onClose={() => setIsAddByUrlOpen(false)}
         onConfirm={handleAddByUrl}
       />
+
+      <Drawer open={isSwitchSourceOpen} onOpenChange={setIsSwitchSourceOpen}>
+        <DrawerContent className="max-h-[85vh]">
+          <DrawerHeader>
+            <DrawerTitle>切换歌单音源</DrawerTitle>
+          </DrawerHeader>
+          <div className="grid max-h-[60vh] gap-2 overflow-y-auto px-4 pb-4">
+            {switchProgress && (
+              <div className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
+                {switchProgress}
+              </div>
+            )}
+            {getAggregatedSourcesForMatch().map((source) => (
+              <Button
+                key={source}
+                variant="outline"
+                className="h-11 justify-start"
+                disabled={isSwitchingSource}
+                onClick={() => handleSwitchPlaylistSource(source)}
+              >
+                {sourceLabels[source] || source}
+              </Button>
+            ))}
+          </div>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }

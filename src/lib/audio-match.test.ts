@@ -200,7 +200,7 @@ describe("handleAutoMatch", () => {
     expect(state.playlists[0]?.tracks[0]?.id).toBe("old");
   });
 
-  it("updates queue and playlists when contextId is 'playlist-xxx'", async () => {
+  it("keeps playlists unchanged when auto match is used in playlist context", async () => {
     const sourceTrack = createTrack("old", "netease");
     const match = createTrack("new", "joox");
     useMusicStore.setState({
@@ -227,7 +227,7 @@ describe("handleAutoMatch", () => {
 
     const state = useMusicStore.getState();
     expect(state.queue[0]?.id).toBe("new");
-    expect(state.playlists[0]?.tracks[0]?.id).toBe("new");
+    expect(state.playlists[0]?.tracks[0]?.id).toBe("old");
     expect(state.favorites[0]?.id).toBe("old");
   });
 
@@ -260,5 +260,55 @@ describe("handleAutoMatch", () => {
     expect(state.queue[0]?.id).toBe("new");
     expect(state.favorites[0]?.id).toBe("old");
     expect(state.playlists[0]?.tracks[0]?.id).toBe("old");
+  });
+
+  it("keeps imported playlist metadata when auto match falls back to another source", async () => {
+    const sourceTrack = createTrack("kugou_HASH", "kugou", "我的纸飞机", [
+      "GooGoo",
+      "王之睿",
+    ]);
+    const match = createTrack(
+      "bvid_BV123",
+      "bilibili",
+      "我的纸飞机 - GooGoo/王之睿「我的纸飞机呀飞呀飞到了芦苇边」【动态歌词】",
+      ["一半耳机给你"]
+    );
+    useMusicStore.setState({
+      queue: [sourceTrack],
+      originalQueue: [sourceTrack],
+      playlists: [
+        { id: "p1", name: "青听", tracks: [sourceTrack], createdAt: 0 },
+      ],
+      contextId: "playlist-p1",
+      bilibiliKeepOriginalMeta: false,
+    });
+    const search = vi
+      .fn()
+      .mockResolvedValue({ items: [match], hasMore: false });
+    vi.mocked(MusicProviderFactory.getProvider).mockReturnValue({
+      source: "bilibili",
+      search,
+      getAutoMatchPredicate: () => (item: MusicTrack) =>
+        item.id === "bvid_BV123",
+      getUrl: vi.fn(),
+      getPic: vi.fn(),
+      getLyric: vi.fn(),
+    });
+
+    await handleAutoMatch(sourceTrack);
+
+    const state = useMusicStore.getState();
+    expect(state.queue[0]).toMatchObject({
+      id: "bvid_BV123",
+      source: "bilibili",
+      name: "我的纸飞机",
+      artist: ["GooGoo", "王之睿"],
+    });
+    expect(state.playlists[0]?.tracks[0]).toMatchObject({
+      id: "kugou_HASH",
+      source: "kugou",
+      name: "我的纸飞机",
+      artist: ["GooGoo", "王之睿"],
+    });
   });
 });

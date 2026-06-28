@@ -328,13 +328,15 @@ export function MusicTrackMobileMenu({
           </ActionButton>
         )}
 
-        <Button
-          variant="ghost"
-          className="w-full cursor-default justify-start text-muted-foreground"
+        <ActionButton
+          icon={Link2}
+          onClick={() =>
+            handleSearch(`${track.name} ${track.artist[0] || ""}`.trim())
+          }
         >
           <Link2 className="mr-2 h-4 w-4" /> 音源：
           {sourceLabels[track.source] || track.source}
-        </Button>
+        </ActionButton>
 
         {onRemove && (
           <ActionButton

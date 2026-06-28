@@ -15,6 +15,21 @@ import {
 } from "./utils/music-key";
 import { logger } from "@/lib/logger";
 
+function buildPlaybackFallbackTrack(
+  original: MusicTrack,
+  match: MusicTrack
+): MusicTrack {
+  return {
+    ...match,
+    name: original.name,
+    artist: original.artist,
+    album: original.album || match.album,
+    pic_id: match.pic_id || original.pic_id,
+    artist_ids: original.artist_ids || match.artist_ids,
+    album_id: original.album_id || match.album_id,
+  };
+}
+
 /**
  * 计算自动换源的单源内排序分数，优先保证歌名与歌手完全一致。
  */
@@ -68,8 +83,7 @@ export async function handleAutoMatch(track: MusicTrack): Promise<boolean> {
   });
 
   try {
-    const { updateTrackInQueue, updateTrackInPlaylists, contextId } =
-      useMusicStore.getState();
+    const { updateTrackInQueue } = useMusicStore.getState();
     const aggregatedSources = getAggregatedSourcesForMatch().filter(
       (source) => source !== track.source
     );
@@ -94,17 +108,9 @@ export async function handleAutoMatch(track: MusicTrack): Promise<boolean> {
     }
 
     // 仅对 B 站音源保留原歌曲的 name 和 artist，避免标题杂乱与作者错位
-    const { bilibiliKeepOriginalMeta } = useMusicStore.getState();
-    const finalTrack: MusicTrack =
-      match.source === "bilibili" && bilibiliKeepOriginalMeta
-        ? { ...match, name: track.name, artist: track.artist }
-        : match;
+    const finalTrack = buildPlaybackFallbackTrack(track, match);
 
     updateTrackInQueue(track.id, finalTrack);
-
-    if (contextId?.startsWith("playlist-")) {
-      updateTrackInPlaylists(track.id, finalTrack);
-    }
     // contextId === "favorites" 时启用（需恢复 isFavorite, favorites, setFavorites 析构）：
     // if (contextId === "favorites" && isFavorite(track.id)) {
     //   setFavorites(favorites.map((t) => (t.id === track.id ? finalTrack : t)));

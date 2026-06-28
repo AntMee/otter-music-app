@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { parseKugouPlaylistUrl } from "./kugou-api";
 import {
+  buildKugouCodeCommandPayload,
+  buildKugouCodePlaylistPayload,
   buildKugouAndroidSignedUrl,
   buildKugouGlobalPlaylistSongsUrl,
   buildKugouPlaylistApiPath,
@@ -15,6 +17,10 @@ const DFID = "-";
 const MID = "testmid12345678901234567890";
 
 describe("parseKugouPlaylistUrl", () => {
+  it("keeps plain Kugou codes out of URL parsing", () => {
+    expect(parseKugouPlaylistUrl("37619861")).toBeNull();
+  });
+
   it("extracts playlist id from PC links", () => {
     expect(
       parseKugouPlaylistUrl(
@@ -52,6 +58,30 @@ describe("parseKugouPlaylistUrl", () => {
       parseKugouPlaylistUrl("https://www.kugou.com/song/#hash=abc")
     ).toBeNull();
     expect(parseKugouPlaylistUrl("not a url")).toBeNull();
+  });
+});
+
+describe("Kugou code payloads", () => {
+  it("builds payloads for KG code import", async () => {
+    await expect(
+      buildKugouCodeCommandPayload("酷狗码：37619861")
+    ).resolves.toMatchObject({
+      data: "37619861",
+    });
+    await expect(
+      buildKugouCodePlaylistPayload({
+        id: "27",
+        userid: "1389505608",
+        collect_type: "0",
+        count: 493,
+      })
+    ).resolves.toMatchObject({
+      data: {
+        id: "27",
+        userid: "1389505608",
+        pagesize: 493,
+      },
+    });
   });
 });
 
@@ -165,6 +195,25 @@ describe("convertKugouSongToMusicTrack", () => {
 
     expect(track.name).toBe("又活了一天");
     expect(track.artist).toEqual(["庄东茹", "DJ豪大大"]);
+  });
+});
+
+describe("Kugou imported song normalization", () => {
+  it("normalizes imported Kugou code file names before source matching", () => {
+    const track = convertKugouSongToMusicTrack({
+      hash: "XYZ",
+      name: "我的纸飞机.mp3",
+      filename: "GooGoo / 王之睿 - 我的纸飞机.mp3",
+      author_name: "GooGoo / 王之睿",
+    });
+
+    expect(track).toMatchObject({
+      id: "kugou_XYZ",
+      name: "我的纸飞机",
+      artist: ["GooGoo", "王之睿"],
+      url_id: "XYZ",
+      lyric_id: "XYZ",
+    });
   });
 });
 

@@ -16,6 +16,7 @@ import {
   Trash2,
   Image,
   Link,
+  Shuffle,
   type LucideIcon,
   FileOutput,
   ArrowUpDown,
@@ -31,6 +32,7 @@ interface PlaylistOperationsProps {
   onDelete?: () => void;
   onSetCover?: () => void;
   onAddByUrl?: () => void;
+  onSwitchSource?: () => void;
   onSort?: (key: TrackSortKey) => void;
 }
 
@@ -87,6 +89,7 @@ export function PlaylistOperations({
   onDelete,
   onSetCover,
   onAddByUrl,
+  onSwitchSource,
   onSort,
 }: PlaylistOperationsProps) {
   // 普通操作项（配置驱动）
@@ -105,6 +108,11 @@ export function PlaylistOperations({
       icon: Link,
       label: "URL 添加",
       onClick: onAddByUrl,
+    },
+    onSwitchSource && {
+      icon: Shuffle,
+      label: "切换歌单音源",
+      onClick: onSwitchSource,
     },
     {
       icon: CopyMinus,
