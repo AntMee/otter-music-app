@@ -1,7 +1,5 @@
 # Otter Music
 
-[网页端](https://github.com/DJChanahCJD/otter-music-web)
-
 <p align="center">
   <img width="100" alt="Otter Music icon" src="public/favicon.svg">
 </p>
@@ -57,7 +55,6 @@
 > 最低支持版本：minSdkVersion = 24 (Android 7.0)
 
 > [!IMPORTANT]
-> 在线体验：[Otter Music](https://otter-music.pages.dev/)
 >
 > 支持 PWA，可添加到主屏幕（iOS 请使用 Safari）
 
